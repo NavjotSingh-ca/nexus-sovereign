@@ -1,0 +1,6 @@
+{"timestamp": "2026-01-26T17:01:54.862223", "level": "INFO", "agent": "VIP", "message": "System initialized", "data": null}
+{"timestamp": "2026-01-26T17:01:54.863019", "level": "INFO", "agent": "Spider", "message": "Scan completed", "data": {"url": "example.com"}}
+{"timestamp": "2026-01-26T17:04:02.468972", "level": "INFO", "agent": "General", "message": "Initializing VIP Supervisor", "data": null}
+{"timestamp": "2026-01-26T17:04:05.083557", "level": "INFO", "agent": "General", "message": "VIP online", "data": null}
+{"timestamp": "2026-01-26T17:04:05.084243", "level": "INFO", "agent": "General", "message": "Registered worker: spider_001", "data": null}
+{"timestamp": "2026-01-26T17:04:05.956538", "level": "INFO", "agent": "General", "message": "System shutdown initiated", "data": null}
