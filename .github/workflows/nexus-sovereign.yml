@@ -46,7 +46,7 @@ jobs:
         python src/vip/event_monitor.py
         
     - name: Upload Intelligence Report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: intelligence-briefing-${{ github.run_number }}
         path: logs/
