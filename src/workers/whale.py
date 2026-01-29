@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(0, 'src/vip')
+from killswitch import check_kill_switch
+
 import os, requests
 from dotenv import load_dotenv
 from supabase import create_client
@@ -52,5 +56,8 @@ def fetch_whale_tx(min_usd=10000000):
             time.sleep(1)
 
 if __name__ == "__main__":
+    if not check_kill_switch():
+        print("Whale: HALTED by kill switch")
+        sys.exit(0)
     fetch_whale_tx()
     print("Whale scan complete")
