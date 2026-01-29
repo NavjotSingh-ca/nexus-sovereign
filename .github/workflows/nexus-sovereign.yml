@@ -23,10 +23,17 @@ jobs:
         python -m pip install --upgrade pip
         pip install supabase python-dotenv aiohttp psutil requests
         
+    - name: Check Kill Switch
+      env:
+        SOVEREIGN_OVERRIDE: ${{ secrets.SOVEREIGN_OVERRIDE }}
+      run: |
+        python src/vip/killswitch.py
+        
     - name: Run VIP Supervisor Check
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        SOVEREIGN_OVERRIDE: ${{ secrets.SOVEREIGN_OVERRIDE }}
       run: |
         python src/vip/supervisor.py
         
@@ -35,6 +42,7 @@ jobs:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+        SOVEREIGN_OVERRIDE: ${{ secrets.SOVEREIGN_OVERRIDE }}
       run: |
         python src/workers/whale.py
         
@@ -42,6 +50,7 @@ jobs:
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        SOVEREIGN_OVERRIDE: ${{ secrets.SOVEREIGN_OVERRIDE }}
       run: |
         python src/general/reporter.py
         
