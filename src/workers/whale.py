@@ -1,6 +1,7 @@
 import sys
 sys.path.insert(0, 'src/vip')
 from killswitch import check_kill_switch
+from byzantine_voter import cast_vote, generate_event_hash
 
 import os, requests
 from dotenv import load_dotenv
@@ -12,7 +13,7 @@ supabase = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
 api_key = os.getenv('ETHERSCAN_API_KEY')
 
 def fetch_whale_tx(min_usd=10000000):
-    """Fetch transactions > $10M USD from tracked wallets"""
+    """Fetch transactions > $10M USD and cast votes"""
     stablecoins = {'USDT', 'USDC', 'DAI', 'BUSD', 'TUSD'}
     
     wallets = supabase.table('wallet_directory').select('*').execute()
@@ -35,24 +36,38 @@ def fetch_whale_tx(min_usd=10000000):
             
             if usd_value < min_usd:
                 continue
-                
+            
+            # Calculate confidence based on amount (higher = more confident)
+            confidence = min(0.95, 0.7 + (usd_value / 100000000))
+            
+            # Cast vote to Byzantine consensus
+            event_data = {
+                'type': 'large_transfer',
+                'entity': wallet['entity_name'],
+                'amount': usd_value,
+                'token': token,
+                'tx_hash': tx['hash']
+            }
+            
+            cast_vote(
+                agent_id='whale_001',
+                agent_type='whale',
+                event_data=event_data,
+                confidence_score=round(confidence, 2),
+                vote_category='market_anomaly'
+            )
+            
+            # Also write to legacy ledger for backward compat
             alert = {
                 'agent_id': 'whale_001',
                 'agent_type': 'whale',
                 'message_type': 'mega_whale_alert',
-                'payload': {
-                    'from': tx['from'],
-                    'to': tx['to'],
-                    'token': token,
-                    'value': value,
-                    'usd_value': usd_value,
-                    'entity_from': wallet['entity_name'],
-                    'tx_hash': tx['hash']
-                },
+                'payload': event_data,
                 'status': 'pending_review'
             }
             supabase.table('ledger').insert(alert).execute()
-            print(f"MEGA WHALE: {wallet['entity_name']} moved ${usd_value:,.0f} {token}")
+            
+            print(f"MEGA WHALE: {wallet['entity_name']} moved ${usd_value:,.0f} {token} (confidence: {confidence:.2f})")
             time.sleep(1)
 
 if __name__ == "__main__":
