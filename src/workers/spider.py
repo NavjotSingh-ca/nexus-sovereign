@@ -9,6 +9,8 @@ import threading
 from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
+import requests
+from bs4 import BeautifulSoup
 
 env_path = Path(__file__).parent.parent.parent / "config" / ".env"
 load_dotenv(env_path)
@@ -76,22 +78,59 @@ class SpiderWorker:
             return False
             
     def scan_target(self, url):
-        """Simulate scanning a website"""
-        if not self.running:
-            return None
+        """Actually scrape real websites"""
+        self.log(f"REAL SCAN: {url}")
+        
+        try:
+            # Real HTTP request
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            response = requests.get(url, headers=headers, timeout=10)
             
-        self.log(f"Scanning: {url}")
-        time.sleep(1)
-        
-        report = {
-            "url": url,
-            "timestamp": datetime.now().isoformat(),
-            "status": "scanned",
-            "findings": ["header_collected", "links_found"],
-            "data_size": 1024
-        }
-        
-        self.write_to_ledger("scan_complete", report)
+            # Parse real HTML
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Extract real data
+            title = soup.find('title').get_text() if soup.find('title') else 'No title'
+            links = [a.get('href') for a in soup.find_all('a') if a.get('href')]
+            images = len(soup.find_all('img'))
+            text_length = len(soup.get_text())
+            
+            # Check for real security issues
+            security_findings = []
+            if 'api-key' in response.text.lower():
+                security_findings.append('api_key_exposed')
+            if 'password' in response.text.lower():
+                security_findings.append('password_mentioned')
+            if 'internal' in response.text.lower():
+                security_findings.append('internal_reference')
+                
+            report = {
+                "url": url,
+                "timestamp": datetime.now().isoformat(),
+                "status": "success",
+                "title": title,
+                "links_found": len(links),
+                "images_found": images,
+                "text_length": text_length,
+                "security_findings": security_findings,
+                "http_status": response.status_code
+            }
+            
+            self.log(f"Found: {title} | {len(links)} links | {len(security_findings)} security issues")
+            
+        except Exception as e:
+            report = {
+                "url": url,
+                "timestamp": datetime.now().isoformat(),
+                "status": "failed",
+                "error": str(e),
+                "security_findings": []
+            }
+            self.log(f"Scan failed: {e}")
+            
+        self.write_to_ledger("real_scan_complete", report)
         return report
         
     def run(self):
@@ -106,14 +145,21 @@ class SpiderWorker:
         # Main work loop
         try:
             while self.running:
-                test_url = "https://example.com"
-                result = self.scan_target(test_url)
+                # Real targets to scan
+                test_urls = [
+                    "https://news.ycombinator.com",      # Hacker News
+                    "https://techcrunch.com",            # Tech news
+                    "https://arstechnica.com",           # Tech/security news
+                    "https://github.com/microsoft",      # Microsoft's GitHub
+                    "https://blog.google"                # Google blog
+                ]
                 
-                if not self.running:
-                    break
-                    
-                self.log("Task complete. Waiting 30s before next scan...")
-                time.sleep(30)
+                for url in test_urls:
+                    if not self.running:
+                        break
+                    result = self.scan_target(url)
+                    self.log(f"Task complete. Waiting 30s before next scan...")
+                    time.sleep(30)
                 
         except KeyboardInterrupt:
             self.log("Interrupted by user")
